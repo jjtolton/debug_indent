@@ -1,0 +1,16 @@
+# Emacs/ediprolog temp files
+.ediprolog-temp
+*~
+\#*\#
+.\#*
+
+# Prolog compiled files
+*.qlf
+*.qly
+
+# Test output
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db

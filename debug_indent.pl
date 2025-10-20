@@ -10,6 +10,8 @@
 :- meta_predicate($$(0)).
 :- meta_predicate('$$-'(0, +, +)).
 
+:- discontiguous(($$)/1).
+
 :- dynamic('$trace_depth'/1).
 :- dynamic('$trace_counter'/1).
 
@@ -62,13 +64,9 @@ user:expand_body(Goal, _Module, _LineNo, Goal).
 
 user:term_expansion((Head :- Body0), (Head :- Body)) :-
     user:contains_debug_op(Body0),
-    format("~n[TERM EXPANSION] Expanding: ~q~n", [Head]),
     prolog_load_context(module, Module),
     prolog_load_context(term_position, position_and_lines_read(_CharPos, LineNo)),
-    format("[TERM EXPANSION] Module: ~q, LineNo: ~q~n", [Module, LineNo]),
-    user:expand_body(Body0, Module, LineNo, Body),
-    format("[TERM EXPANSION] Body0: ~q~n", [Body0]),
-    format("[TERM EXPANSION] Body:  ~q~n~n", [Body]).
+    user:expand_body(Body0, Module, LineNo, Body).
 
 
 
@@ -105,50 +103,23 @@ reset_trace_depth :-
     retractall('$trace_depth'(_)),
     assertz('$trace_depth'(D)).
 
-'$$'(G_0) :-
-    '$trace_depth'(D),
-    '$next_counter'(N),
-    '$indent',
-    format("~w] call: ", [N]),
-    portray_clause(G_0),
-    '$inc_depth'(D, _D1),
-    catch(
-          (
-              G_0,
-              '$dec_depth'(D),
-              '$indent',
-              format("~w] exit: ", [N]),
-              portray_clause(G_0)
-          ),
-        Ex,
-          (   '$dec_depth'(D),
-              '$indent',
-              format("~w] exception: ", [N]),
-              portray_clause(Ex:G_0),
-              throw(Ex)
-          )
-    ).
-
 '$$-'(G_0, Module, LineNo) :-
     '$trace_depth'(D),
     '$next_counter'(N),
     '$indent',
-    format("~w] call (~w:~w): ", [N, Module, LineNo]),
-    portray_clause(G_0),
+    portray_clause(trace(id:N, call, Module:LineNo, G_0)),
     '$inc_depth'(D, _D1),
     catch(
           (
               G_0,
               '$dec_depth'(D),
               '$indent',
-              format("~w] exit (~w:~w): ", [N, Module, LineNo]),
-              portray_clause(G_0)
+              portray_clause(trace(id:N, exit, Module:LineNo, G_0))
           ),
         Ex,
           (   '$dec_depth'(D),
               '$indent',
-              format("~w] exception (~w:~w): ", [N, Module, LineNo]),
-              portray_clause(Ex:G_0),
+              portray_clause(trace(id:N, exception, Module:LineNo, Ex, G_0)),
               throw(Ex)
           )
     ).

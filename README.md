@@ -72,16 +72,25 @@ From the REPL:
 
 ### Output
 
+All trace output is formatted as proper Prolog terms for easy parsing and processing:
+
+```prolog
+trace(id:0, call, example:6, 3>0).
+trace(id:0, exit, example:6, 3>0).
+  trace(id:1, call, example:7, 2 is 3-1).
+  trace(id:1, exit, example:7, 2 is 3-1).
+    trace(id:2, call, example:8, factorial(2, _A)).
+      trace(id:3, call, example:6, 2>0).
+      trace(id:3, exit, example:6, 2>0).
+      ...
 ```
-0] call (example:6): 3>0.
-0] exit (example:6): 3>0.
-  1] call (example:7): 2 is 3-1.
-  1] exit (example:7): 2 is 3-1.
-  2] call (example:8): factorial(2,A).
-    3] call (example:6): 2>0.
-    3] exit (example:6): 2>0.
-    ...
-```
+
+Each trace term contains:
+- `id:N` - Unique identifier for matching call/exit pairs
+- Event type - `call`, `exit`, or `exception`
+- `Module:LineNo` - Source location
+- The goal being traced
+- For exceptions: `trace(id:N, exception, Module:LineNo, Exception, Goal)`
 
 ### Recommended: Using with ediprolog
 

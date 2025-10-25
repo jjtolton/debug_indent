@@ -4,6 +4,7 @@
     ('$$-')/3,
     reset_trace_depth/0,
     contains_debug_op/1,
+    is_instrumented/1,
     instrument_body/2,
     expand_body/4,
     auto_instrument_and_expand/2,
@@ -17,6 +18,8 @@
 :- meta_predicate('$$-'(0, +, +)).
 
 :- discontiguous(($$)/1).
+:- discontiguous(debug_started/0).
+:- discontiguous(debug_ended/0).
 
 term_expansion((:- establish_debug_mode), established) :-
     (   bb_get(auto_debug_mode, _), !
@@ -48,6 +51,27 @@ contains_debug_op(\+ A) :- !,
     contains_debug_op(A).
 
 contains_debug_op(_) :- fail.
+
+is_instrumented(Var) :-
+    var(Var), !, fail.
+
+is_instrumented($$ _) :- !.
+
+is_instrumented('$$-'(_, _, _)) :- !.
+
+is_instrumented((A, B)) :- !,
+    (is_instrumented(A) ; is_instrumented(B)).
+
+is_instrumented((A ; B)) :- !,
+    (is_instrumented(A) ; is_instrumented(B)).
+
+is_instrumented((A -> B)) :- !,
+    (is_instrumented(A) ; is_instrumented(B)).
+
+is_instrumented(\+ A) :- !,
+    is_instrumented(A).
+
+is_instrumented(_) :- fail.
 
 instrument_body(Var, Var) :- var(Var), !.
 
@@ -101,15 +125,21 @@ expand_debug_ops(Body0, Body) :-
     prolog_load_context(term_position, position_and_lines_read(_CharPos, LineNo)),
     expand_body(Body0, Module, LineNo, Body).
 
-term_expansion((:- start_debug), []) :-
+% term_expansion((:- start_debug), []) :-
+%     bb_put(auto_debug_mode, on).
+
+% term_expansion((:- end_debug), []) :-
+%     bb_put(auto_debug_mode, off).
+
+term_expansion((:- start_debug), debug_started) :-
     bb_put(auto_debug_mode, on).
 
-term_expansion((:- end_debug), []) :-
+term_expansion((:- end_debug), debug_ended) :-
     bb_put(auto_debug_mode, off).
 
 term_expansion((Head :- Body0), (Head :- Body)) :-
     bb_get(auto_debug_mode, on),
-    \+ contains_debug_op(Body0),
+    \+ is_instrumented(Body0),
     !,
     auto_instrument_and_expand(Body0, Body).
 

@@ -1,0 +1,12 @@
+:- use_module('../quads/quads.pl').
+:- use_module(debug_indent).
+
+
+
+
+
+'basic'
+?- debug_indent:contains_debug_op(($$ _X=1)).
+
+
+
